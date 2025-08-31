@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Access Tester - Telegram Bot</title>
+    <title>Access Manager</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body {
@@ -10,159 +10,189 @@
             padding: 20px;
             background-color: #f0f8ff;
         }
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
+        .permission-box {
             background: white;
             padding: 20px;
             border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            box-shadow: 0 0 10px rgba(0,0,0,0.2);
+            margin: 20px auto;
+            max-width: 500px;
         }
-        h1 {
-            color: #0088cc;
+        .permission-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            border-bottom: 1px solid #eee;
         }
-        .btn {
+        .permission-text {
+            text-align: left;
+            flex-grow: 1;
+        }
+        .permission-toggle {
+            position: relative;
+            width: 50px;
+            height: 24px;
+        }
+        .toggle-input {
+            display: none;
+        }
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            border-radius: 24px;
+            transition: .4s;
+        }
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            border-radius: 50%;
+            transition: .4s;
+        }
+        .toggle-input:checked + .toggle-slider {
+            background-color: #2196F3;
+        }
+        .toggle-input:checked + .toggle-slider:before {
+            transform: translateX(26px);
+        }
+        .grant-btn {
             background-color: #0088cc;
             color: white;
-            padding: 12px 20px;
+            padding: 15px 30px;
             border: none;
             border-radius: 5px;
-            margin: 10px;
+            font-size: 18px;
             cursor: pointer;
-            font-size: 16px;
+            margin-top: 20px;
         }
-        .result {
-            margin: 15px;
+        .access-status {
+            margin-top: 20px;
             padding: 10px;
-            border: 1px solid #ddd;
             border-radius: 5px;
-            background: #f9f9f9;
+            display: none;
         }
-        video, #map {
-            width: 100%;
-            max-width: 400px;
-            height: 250px;
-            margin: 10px auto;
-            border: 2px solid #0088cc;
-            border-radius: 5px;
+        .granted {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .denied {
+            background-color: #f44336;
+            color: white;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>📱 Access Tester Bot</h1>
-        <p>Telegram bot testing page</p>
+    <div class="permission-box">
+        <h2>🔐 Permission Request</h2>
+        <p>This app needs the following permissions to work properly:</p>
         
-        <div>
-            <button class="btn" onclick="accessCamera()">📷 Camera Access</button>
-            <div class="result" id="cameraResult">Camera status: Not accessed</div>
-            <video id="video" autoplay playsinline style="display:none;"></video>
+        <div class="permission-item">
+            <div class="permission-text">
+                <strong>📷 Camera Access</strong><br>
+                <small>For video recording and photos</small>
+            </div>
+            <label class="permission-toggle">
+                <input type="checkbox" class="toggle-input" id="cameraToggle">
+                <span class="toggle-slider"></span>
+            </label>
         </div>
 
-        <div>
-            <button class="btn" onclick="getLocation()">📍 GPS Location</button>
-            <div class="result" id="locationResult">Location: Not accessed</div>
-            <div id="map"></div>
+        <div class="permission-item">
+            <div class="permission-text">
+                <strong>📍 Location Access</strong><br>
+                <small>For GPS and location services</small>
+            </div>
+            <label class="permission-toggle">
+                <input type="checkbox" class="toggle-input" id="locationToggle">
+                <span class="toggle-slider"></span>
+            </label>
         </div>
 
-        <div>
-            <button class="btn" onclick="getBattery()">🔋 Battery Info</button>
-            <div class="result" id="batteryResult">Battery: Not checked</div>
+        <div class="permission-item">
+            <div class="permission-text">
+                <strong>🎤 Microphone Access</strong><br>
+                <small>For audio recording</small>
+            </div>
+            <label class="permission-toggle">
+                <input type="checkbox" class="toggle-input" id="microphoneToggle">
+                <span class="toggle-slider"></span>
+            </label>
         </div>
 
-        <div>
-            <button class="btn" onclick="getNetwork()">📶 Network Info</button>
-            <div class="result" id="networkResult">Network: Not checked</div>
-        </div>
+        <button class="grant-btn" onclick="requestPermissions()">GRANT PERMISSIONS</button>
 
-        <div class="result">
-            <strong>Device Info:</strong><br>
-            <div id="deviceInfo">Loading...</div>
-        </div>
+        <div id="accessStatus" class="access-status"></div>
     </div>
 
     <script>
-        // Device info automatically show karega
-        function updateDeviceInfo() {
-            const info = `
-                Platform: ${navigator.platform}<br>
-                User Agent: ${navigator.userAgent}<br>
-                Language: ${navigator.language}<br>
-                Cookies Enabled: ${navigator.cookieEnabled}
-            `;
-            document.getElementById('deviceInfo').innerHTML = info;
-        }
-        
-        // Camera access
-        function accessCamera() {
-            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                navigator.mediaDevices.getUserMedia({ video: true })
-                    .then(function(stream) {
-                        document.getElementById('cameraResult').innerHTML = "Camera status: ✅ Accessed";
-                        const video = document.getElementById('video');
-                        video.srcObject = stream;
-                        video.style.display = 'block';
-                    })
-                    .catch(function(error) {
-                        document.getElementById('cameraResult').innerHTML = "Camera status: ❌ Access denied";
-                    });
-            } else {
-                document.getElementById('cameraResult').innerHTML = "Camera status: ❌ Not supported";
+        function requestPermissions() {
+            const camera = document.getElementById('cameraToggle').checked;
+            const location = document.getElementById('locationToggle').checked;
+            const microphone = document.getElementById('microphoneToggle').checked;
+
+            const statusDiv = document.getElementById('accessStatus');
+            statusDiv.style.display = 'block';
+
+            if (camera) {
+                if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                    navigator.mediaDevices.getUserMedia({ video: true })
+                        .then(() => {
+                            statusDiv.innerHTML += '📷 Camera: Granted<br>';
+                            statusDiv.classList.add('granted');
+                        })
+                        .catch(() => {
+                            statusDiv.innerHTML += '📷 Camera: Denied<br>';
+                            statusDiv.classList.add('denied');
+                        });
+                }
+            }
+
+            if (location) {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                        () => {
+                            statusDiv.innerHTML += '📍 Location: Granted<br>';
+                            statusDiv.classList.add('granted');
+                        },
+                        () => {
+                            statusDiv.innerHTML += '📍 Location: Denied<br>';
+                            statusDiv.classList.add('denied');
+                        }
+                    );
+                }
+            }
+
+            if (microphone) {
+                if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                    navigator.mediaDevices.getUserMedia({ audio: true })
+                        .then(() => {
+                            statusDiv.innerHTML += '🎤 Microphone: Granted<br>';
+                            statusDiv.classList.add('granted');
+                        })
+                        .catch(() => {
+                            statusDiv.innerHTML += '🎤 Microphone: Denied<br>';
+                            statusDiv.classList.add('denied');
+                        });
+                }
             }
         }
 
-        // GPS Location
-        function getLocation() {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    function(position) {
-                        const lat = position.coords.latitude;
-                        const lon = position.coords.longitude;
-                        document.getElementById('locationResult').innerHTML = 
-                            `Location: ✅ Accessed<br>Latitude: ${lat}<br>Longitude: ${lon}`;
-                        
-                        // Map show karega
-                        document.getElementById('map').innerHTML = 
-                            `<iframe width="100%" height="100%" frameborder="0" style="border:0" 
-                            src="https://maps.google.com/maps?q=${lat},${lon}&z=15&output=embed" 
-                            allowfullscreen></iframe>`;
-                    },
-                    function(error) {
-                        document.getElementById('locationResult').innerHTML = "Location: ❌ Access denied";
-                    }
-                );
-            } else {
-                document.getElementById('locationResult').innerHTML = "Location: ❌ Not supported";
-            }
+        // Page load hone par toggle switches ko automatically on kar do
+        window.onload = function() {
+            document.getElementById('cameraToggle').checked = true;
+            document.getElementById('locationToggle').checked = true;
+            document.getElementById('microphoneToggle').checked = true;
         }
-
-        // Battery info
-        function getBattery() {
-            if ('getBattery' in navigator) {
-                navigator.getBattery().then(function(battery) {
-                    const level = battery.level * 100;
-                    const charging = battery.charging ? "Yes" : "No";
-                    document.getElementById('batteryResult').innerHTML = 
-                        `Battery: ✅ Level: ${level}%<br>Charging: ${charging}`;
-                });
-            } else {
-                document.getElementById('batteryResult').innerHTML = "Battery: ❌ Not supported";
-            }
-        }
-
-        // Network info
-        function getNetwork() {
-            if ('connection' in navigator) {
-                const connection = navigator.connection;
-                document.getElementById('networkResult').innerHTML = 
-                    `Network: ✅ Type: ${connection.effectiveType}<br>Speed: ${connection.downlink} Mbps`;
-            } else {
-                document.getElementById('networkResult').innerHTML = "Network: ❌ Not supported";
-            }
-        }
-
-        // Page load hone par device info show karo
-        updateDeviceInfo();
     </script>
 </body>
 </html>
