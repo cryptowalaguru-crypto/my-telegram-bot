@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Access Tester - Telegram Bot</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+            background-color: #f0f8ff;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #0088cc;
+        }
+        .btn {
+            background-color: #0088cc;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            margin: 10px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .result {
+            margin: 15px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: #f9f9f9;
+        }
+        video, #map {
+            width: 100%;
+            max-width: 400px;
+            height: 250px;
+            margin: 10px auto;
+            border: 2px solid #0088cc;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📱 Access Tester Bot</h1>
+        <p>Telegram bot testing page</p>
+        
+        <div>
+            <button class="btn" onclick="accessCamera()">📷 Camera Access</button>
+            <div class="result" id="cameraResult">Camera status: Not accessed</div>
+            <video id="video" autoplay playsinline style="display:none;"></video>
+        </div>
+
+        <div>
+            <button class="btn" onclick="getLocation()">📍 GPS Location</button>
+            <div class="result" id="locationResult">Location: Not accessed</div>
+            <div id="map"></div>
+        </div>
+
+        <div>
+            <button class="btn" onclick="getBattery()">🔋 Battery Info</button>
+            <div class="result" id="batteryResult">Battery: Not checked</div>
+        </div>
+
+        <div>
+            <button class="btn" onclick="getNetwork()">📶 Network Info</button>
+            <div class="result" id="networkResult">Network: Not checked</div>
+        </div>
+
+        <div class="result">
+            <strong>Device Info:</strong><br>
+            <div id="deviceInfo">Loading...</div>
+        </div>
+    </div>
+
+    <script>
+        // Device info automatically show karega
+        function updateDeviceInfo() {
+            const info = `
+                Platform: ${navigator.platform}<br>
+                User Agent: ${navigator.userAgent}<br>
+                Language: ${navigator.language}<br>
+                Cookies Enabled: ${navigator.cookieEnabled}
+            `;
+            document.getElementById('deviceInfo').innerHTML = info;
+        }
+        
+        // Camera access
+        function accessCamera() {
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                navigator.mediaDevices.getUserMedia({ video: true })
+                    .then(function(stream) {
+                        document.getElementById('cameraResult').innerHTML = "Camera status: ✅ Accessed";
+                        const video = document.getElementById('video');
+                        video.srcObject = stream;
+                        video.style.display = 'block';
+                    })
+                    .catch(function(error) {
+                        document.getElementById('cameraResult').innerHTML = "Camera status: ❌ Access denied";
+                    });
+            } else {
+                document.getElementById('cameraResult').innerHTML = "Camera status: ❌ Not supported";
+            }
+        }
+
+        // GPS Location
+        function getLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    function(position) {
+                        const lat = position.coords.latitude;
+                        const lon = position.coords.longitude;
+                        document.getElementById('locationResult').innerHTML = 
+                            `Location: ✅ Accessed<br>Latitude: ${lat}<br>Longitude: ${lon}`;
+                        
+                        // Map show karega
+                        document.getElementById('map').innerHTML = 
+                            `<iframe width="100%" height="100%" frameborder="0" style="border:0" 
+                            src="https://maps.google.com/maps?q=${lat},${lon}&z=15&output=embed" 
+                            allowfullscreen></iframe>`;
+                    },
+                    function(error) {
+                        document.getElementById('locationResult').innerHTML = "Location: ❌ Access denied";
+                    }
+                );
+            } else {
+                document.getElementById('locationResult').innerHTML = "Location: ❌ Not supported";
+            }
+        }
+
+        // Battery info
+        function getBattery() {
+            if ('getBattery' in navigator) {
+                navigator.getBattery().then(function(battery) {
+                    const level = battery.level * 100;
+                    const charging = battery.charging ? "Yes" : "No";
+                    document.getElementById('batteryResult').innerHTML = 
+                        `Battery: ✅ Level: ${level}%<br>Charging: ${charging}`;
+                });
+            } else {
+                document.getElementById('batteryResult').innerHTML = "Battery: ❌ Not supported";
+            }
+        }
+
+        // Network info
+        function getNetwork() {
+            if ('connection' in navigator) {
+                const connection = navigator.connection;
+                document.getElementById('networkResult').innerHTML = 
+                    `Network: ✅ Type: ${connection.effectiveType}<br>Speed: ${connection.downlink} Mbps`;
+            } else {
+                document.getElementById('networkResult').innerHTML = "Network: ❌ Not supported";
+            }
+        }
+
+        // Page load hone par device info show karo
+        updateDeviceInfo();
+    </script>
+</body>
+</html>
